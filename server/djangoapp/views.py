@@ -2,10 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
-# from .models import related models
-from .restapis import get_request, get_dealers_from_cf, get_dealer_reviews_from_cf, get_dealer_by_id_from_cf
-# from .restapis import get_dealer_from_cf, get_dealer_reviews_from_cf, get_dealer_by_id_from_cf, post_request
-# from .restapis import related methods
+from .models import CarDealer, CarMake, CarModel, DealerReview
+from .restapis import get_request, get_dealers_from_cf, get_dealer_by_id_from_cf, get_dealer_reviews_from_cf, post_request, analyze_review_sentiments
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from datetime import datetime
@@ -18,54 +16,58 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
+
 # Create an `about` view to render a static about page
+# def about(request):
 def about(request):
     context = {}
     if request.method == "GET":
         return render(request, 'djangoapp/about.html', context)
+# ...
 
 
 # Create a `contact` view to return a static contact page
+#def contact(request):
 def contact(request):
     context = {}
     if request.method == "GET":
         return render(request, 'djangoapp/contact.html', context)
-
 # Create a `login_request` view to handle sign in request
+# def login_request(request):
 def login_request(request):
     context = {}
+    # Handles POST request
     if request.method == "POST":
-        # pull from dictionary
+        # Get username and password from request.POST dictionary
         username = request.POST['username']
         password = request.POST['psw']
-        # check auth
-        user = authenticate(username=username, password=password) 
+        # Try to check if provide credential can be authenticated
+        user = authenticate(username=username, password=password)
         if user is not None:
-            # login if valid
+            # If user is valid, call login method to login current user
             login(request, user)
-            return render(request, 'djangoapp/index.html', context)
-        else:
-            return render(request, 'djangoapp/index.html', context)
-    else:
-        return render(request, 'djangoapp/index.html', context)
+            return redirect('djangoapp:index')
+        
+    
 
 # Create a `logout_request` view to handle sign out request
+# def logout_request(request):
 def logout_request(request):
-    context = {}
-    # get user from session id
+    # Get the user object based on session id in request
     print("Log out the user `{}`".format(request.user.username))
+    # Logout user in the request
     logout(request)
-    # redirect back to the index.html
-    return render(request, 'djangoapp/index.html', context)
+    
+    return redirect('djangoapp:index')
 
 # Create a `registration_request` view to handle sign up request
+
 def registration_request(request):
     context = {}
-    # rend if it is a GET req
     if request.method == 'GET':
         return render(request, 'djangoapp/registration.html', context)
     elif request.method == 'POST':
-        # get user info
+        # Check if user exists
         username = request.POST['username']
         password = request.POST['psw']
         first_name = request.POST['firstname']
@@ -75,90 +77,60 @@ def registration_request(request):
             User.objects.get(username=username)
             user_exist = True
         except:
-            logger.debug("{} is new user".format(username))
+            logger.error("New user")
         if not user_exist:
-            # create new user
-            user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name, password=password)
+            user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name,
+                                            password=password)
+            user.is_superuser = True
+            user.is_staff=True
+            user.save()  
             login(request, user)
-            return render(request, 'djangoapp/index.html', context)
+            return redirect("djangoapp:index")
         else:
-            return render(request, 'djangoapp/index.html', context)
+            messages.warning(request, "The user already exists.")
+            return redirect("djangoapp:registration")
 
 # Update the `get_dealerships` view to render the index page with a list of dealerships
-# def get_dealerships(request):
-#     context = {}
-#     if request.method == "GET":
-#         return render(request, 'djangoapp/index.html', context)
-# def get_dealerships(request):
-#     if request.method == "GET":
-#         url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-dealership"
-#         # Get dealers from the URL
-#         dealerships = get_dealers_from_cf(url)
-#         # Concat all dealer's short name
-#         dealer_names = ' '.join([dealer.short_name for dealer in dealerships])
-#         # Return a list of dealer short name
-#         return HttpResponse(dealer_names)
-
 def get_dealerships(request):
     if request.method == "GET":
         context = {}
-
-        state = request.GET.get("st")
-        dealerId = request.GET.get("dealerId")
-        url = "https://us-south.functions.appdomain.cloud/api/v1/web/7ccc880f-504c-4f24-a816-b01352454616/dealership-package/get-dealership"
-
-        try:
-            if state:
-                dealerships = get_dealers_from_cf(url, st=state)
-            elif dealerId:
-                dealerships = get_dealers_from_cf(url, dealerId=dealerId)
-            else:
-                dealerships = get_dealers_from_cf(url)
-        except Exception as e:
-            # Handle the error and set dealerships to an empty list or display an error message
-            dealerships = []
-            context["error"] = f"An error occurred while fetching dealerships: {e}"
-
+        url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-dealership"
+        dealerships = get_dealers_from_cf(url)
         context["dealership_list"] = dealerships
-        print(context["dealership_list"])
-
-        return render(request, "djangoapp/index.html", context=context)
-        
-
-
-
+        return render(request, 'djangoapp/index.html', context)
 # Create a `get_dealer_details` view to render the reviews of a dealer
-# def get_dealer_details(request, dealer_id):
-# ...
 def get_dealer_details(request, id):
     if request.method == "GET":
-        dealer_url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-dealership"
-        dealer = get_dealer_by_id_from_cf(dealer_url, id)
         context = {}
+        dealer_url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-dealership"
+        dealer = get_dealer_by_id_from_cf(dealer_url, id=id)
         context["dealer"] = dealer
     
         review_url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-review"
-        reviews = get_dealer_reviews_from_cf(review_url, id)
+        reviews = get_dealer_reviews_from_cf(review_url, id=id)
         print(reviews)
         context["reviews"] = reviews
         
         return render(request, 'djangoapp/dealer_details.html', context)
+          
 
 # Create a `add_review` view to submit a review
-# def add_review(request, dealer_id):
-# ...
+
+            
+
+# View to submit a new review
 def add_review(request, id):
     context = {}
-    dealer_url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-reviews"
+    dealer_url = "https://us-south.functions.appdomain.cloud/api/v1/web/a1358345-8cc6-4b5b-a4e1-c2cc1075b0f9/dealership-package/get-dealership"
     dealer = get_dealer_by_id_from_cf(dealer_url, id=id)
     context["dealer"] = dealer
     if request.method == 'GET':
         # Get cars for the dealer
         cars = CarModel.objects.all()
         print(cars)
-        context["cars"] = cars
-        
+        context["cars"] = cars    
         return render(request, 'djangoapp/add_review.html', context)
+        
     elif request.method == 'POST':
         if request.user.is_authenticated:
             username = request.user.username

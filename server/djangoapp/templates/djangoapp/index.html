@@ -13,8 +13,7 @@
 
 </head>
 
-    <body>
-    <!--Add a nav bar here -->
+<body>
     <nav class="navbar navbar-light bg-light">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -46,35 +45,55 @@
     </nav>        
 
 
-<!-- testing something -->
-<!-- <h1>TEST TEST TEST TEST</h1>  -->
-<!-- {% if dealership_list %}
-{% for dealer in dealership_list %}
-<ul>
-<div class="container p-4">
-<h1>TEST TEST TEST TEST</h1>       
-<h1><b>{{dealership_list.full_name}}</b>test</h1>
-</ul>
-{% endfor %}
-{% else %}
-<p>No dealerships available</p>
-</div>
-{% endif %} -->
-<!-- end testing something -->
+<div class="container mt-4">
+    <!-- {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-warning" role="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %} -->
 
-
-
-    <!--Add a dealer table here -->
-    
-
-    <!--Add a footer here -->
-    
-    <footer class="fixed-bottom bg-light">
+    <table class="table" id="table"
+        data-filter-control="true">
+        <thead>
+            <tr>
+                <th data-field="id">ID</th>
+                <th data-field="full_name">Dealer Name</th>
+                <th data-field="city">City</th>
+                <th data-field="address">Address</th>
+                <th data-field="zip">Zip</th>
+                <th data-field="state" data-filter-control="select">State</th>
+            </tr>
+        </thead>
+         <tbody>
+            {% for dealer in dealership_list %}
+                <tr>
+                    <td>{{dealer.id}}</td>
+                    <td><a href="{% url 'djangoapp:dealer_details' dealer.id %}">{{dealer.full_name}}</a></td>   
+                    <td>{{dealer.city}}</td>
+                    <td>{{dealer.address}}</td>
+                    <td>{{dealer.zip}}</td>
+                    <td>{{dealer.st}}</td>
+                </tr>
+            {% endfor %}
+         </tbody>
+    </table>
+    </div>
+  
+    <!--Add a footer here -->  
+  <footer class="fixed-bottom bg-light">
         <div class="container-fluid mx-auto p-4">
           <a href="{% url 'djangoapp:contact' %}">Contact Us</a>
         </div>
   </footer>
 
-    </body>
+</div>
+</body>
+
+
+<script>
+  $(function() {
+    $('#table').bootstrapTable()
+  })
+</script>
 
 </html>
