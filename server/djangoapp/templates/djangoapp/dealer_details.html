@@ -41,12 +41,7 @@
     </div>
 </nav>  
 
-<div class="container-fluid">
-    <!-- {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-warning" role="alert">{{ message }}</div>
-        {% endfor %}
-    {% endif %} -->
+<div class="container mt-3">
 
     <h3>Reviews for <b>{{dealer.full_name}}</b></h3>
 
@@ -66,11 +61,12 @@
                                    alt="Sentiment">
                     {% endif %}
                     <div class="card-body bg-light">
-                              {% if review.car_make%}
-                                  <h5 class="card-title">{{review.car_make}}, {{review.car_model}} </h5>
-                                  <h5 class="card-title">{{review.car_year}}</h5>
-                               {% endif %}
-                              <p class="card-text">{{review.review}}</p>
+                        
+                                  <h5 class="card-title">{{review.car_make}}</h5>
+                                  <h5 class="card-title">{{review.car_model}} </h5>
+                                  <h5 class="card-title">{{review.car_year}} 2023</h5>
+                               <p class="card-text">{{review.review}}</p>
+
                     </div>
                 </div>
             </div>

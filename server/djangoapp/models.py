@@ -32,28 +32,29 @@ class CarMake(models.Model):
     def __str__(self):
         return self.name
 
-
 class CarModel(models.Model):
-    # - Many-To-One relationship to Car Make model (One Car Make has many Car Models, using ForeignKey field)
-    make = models.ForeignKey('CarMake', on_delete=models.CASCADE)
-    name = models.CharField(null=False, max_length=30, default='SampleModel')
-    CAR_CHOICES = (
-    ("SEDAN", "Sedan"),
-    ("SUV", "SUV"),
-    ("TRUCK", "Truck"),
-    ("CONVERTABLE", "Convertable"),
-    ("VAN", "Van"),
-    )
-    car = models.CharField(max_length=11, choices=CAR_CHOICES, default="SEDAN")
-    dealerid = models.IntegerField()
-    year = models.IntegerField()
+    SEDAN = 'sedan'
+    SUV = 'suv'
+    WAGON = 'wagon'
+    CAR_TYPES = [
+        (SEDAN, 'Sedan'),
+        (SUV, 'Suv'),
+        (WAGON, 'Wagon')
+    ]
+    make = models.ForeignKey(CarMake, on_delete=models.CASCADE)
+    name = models.CharField(null=False, max_length=50)
+    dealer_id = models.IntegerField()
+    car_type = models.CharField(max_length=50, choices=CAR_TYPES)
+    year = models.DateField()
 
     def __str__(self):
-        return f'{self.name},{self.make},{self.year}'
+        return "Name: " + self.name + "," + \
+                "Dealer ID: " + str(self.dealer_id) + "," + \
+               "Type: " + self.car_type + "," + \
+               "Year: " + str(self.year.year)
 
 #CarDealer Class
 class CarDealer:
-
     def __init__(self, address, city, full_name, id, lat, long, short_name, st, zip):
         # Dealer address
         self.address = address
@@ -80,7 +81,6 @@ class CarDealer:
 # <HINT> Create a plain Python class `DealerReview` to hold review data
 
 class DealerReview:
-
     def __init__(self, dealership, name, purchase, review):
         # Required attributes
         self.dealership = dealership
